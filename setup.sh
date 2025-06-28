@@ -44,17 +44,35 @@ if ! grep -q "your_secure" .env; then
 else
     echo "🔐 Generating secure passwords..."
     
-    # Generate random passwords
-    MONGO_PASS=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-25)
-    JWT_SECRET=$(openssl rand -base64 64 | tr -d "=+/" | cut -c1-64)
-    NPM_ROOT_PASS=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-25)
-    NPM_PASS=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-25)
+    # Generate random passwords (alphanumeric only to avoid sed issues)
+    MONGO_PASS=$(openssl rand -hex 16)
+    JWT_SECRET=$(openssl rand -hex 32)
+    NPM_ROOT_PASS=$(openssl rand -hex 16)
+    NPM_PASS=$(openssl rand -hex 16)
     
-    # Update .env file
-    sed -i "s/your_secure_mongo_password/$MONGO_PASS/g" .env
-    sed -i "s/your_super_secret_jwt_key_change_in_production_use_64_chars_minimum/$JWT_SECRET/g" .env
-    sed -i "s/your_secure_npm_root_password/$NPM_ROOT_PASS/g" .env
-    sed -i "s/your_secure_npm_password/$NPM_PASS/g" .env
+    # Update .env file using a safer method
+    # Create a temporary file with the updated content
+    cat > .env << EOF
+# Environment Variables Configuration
+# Generated automatically by setup script
+
+# MongoDB Configuration
+MONGO_ROOT_USERNAME=admin
+MONGO_ROOT_PASSWORD=$MONGO_PASS
+
+# JWT Secret (use a strong random string)
+JWT_SECRET=$JWT_SECRET
+
+# Nginx Proxy Manager Database
+NPM_DB_ROOT_PASSWORD=$NPM_ROOT_PASS
+NPM_DB_PASSWORD=$NPM_PASS
+
+# Domain Configuration (update with your domain)
+DOMAIN_NAME=your-domain.com
+
+# Optional: Custom API URL for frontend (if using different domain)
+# REACT_APP_API_URL=https://api.your-domain.com/api
+EOF
     
     echo "✅ Generated secure passwords in .env file"
 fi
@@ -146,10 +164,10 @@ echo "   - Demo login: coach@demo.com / password123"
 echo "   - Registration code: COACH2024"
 echo ""
 echo "4. View Logs:"
-echo "   docker-compose logs -f"
+echo "   docker compose logs -f"
 echo ""
 echo "5. Stop Services:"
-echo "   docker-compose down"
+echo "   docker compose down"
 echo ""
 
 # Show important security reminders
