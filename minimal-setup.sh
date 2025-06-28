@@ -388,7 +388,7 @@ networks:
 EOF
 
 echo "🚀 Building and starting services..."
-docker-compose -f docker-compose.minimal.yml up -d --build
+docker compose -f docker-compose.minimal.yml up -d --build
 
 echo "⏳ Waiting for services..."
 sleep 30
@@ -406,7 +406,7 @@ echo "1. Go to http://localhost:3000"
 echo "2. Click register or create account"
 echo "3. Use registration code: COACH2024"
 echo ""
-echo "📊 Check status: docker-compose -f docker-compose.minimal.yml ps"
-echo "📝 View logs: docker-compose -f docker-compose.minimal.yml logs -f"
-echo "🛑 Stop: docker-compose -f docker-compose.minimal.yml down"
+echo "📊 Check status: docker compose -f docker-compose.minimal.yml ps"
+echo "📝 View logs: docker compose -f docker-compose.minimal.yml logs -f"
+echo "🛑 Stop: docker compose -f docker-compose.minimal.yml down"
 EOF
