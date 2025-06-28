@@ -112,6 +112,18 @@ root.render(
 );
 EOF
 
+# Generate package-lock.json files for better Docker builds
+echo "📦 Generating package-lock.json files..."
+if [ -f backend/package.json ] && [ ! -f backend/package-lock.json ]; then
+    echo "   Generating backend package-lock.json..."
+    cd backend && npm install --package-lock-only && cd ..
+fi
+
+if [ -f frontend/package.json ] && [ ! -f frontend/package-lock.json ]; then
+    echo "   Generating frontend package-lock.json..."
+    cd frontend && npm install --package-lock-only && cd ..
+fi
+
 # Check if ports are available
 echo "🔍 Checking if required ports are available..."
 PORTS=(80 443 81)
@@ -129,7 +141,7 @@ echo "🚀 Building and starting services..."
 echo "   This may take several minutes on first run..."
 
 # Pull base images first to show progress
-# docker compose pull mongo 
+# docker-compose pull
 
 # Build and start services
 docker compose up -d --build

@@ -1,5 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const multer = require('multer');
@@ -7,34 +8,16 @@ const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
 
-// Import middleware
-const {
-  rateLimiters,
-  securityMiddleware,
-  compressionMiddleware,
-  loggingMiddleware,
-  timeoutMiddleware,
-  requestSizeMiddleware,
-  errorHandlingMiddleware,
-  healthCheckMiddleware,
-  corsMiddleware
-} = require('./middleware');
-
 const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://mongo:27017/scoutpro';
 
-// Apply middleware in order
-app.use(loggingMiddleware());
-app.use(securityMiddleware());
-app.use(compressionMiddleware());
-app.use(timeoutMiddleware());
-app.use(corsMiddleware());
+// Basic middleware setup
+app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/uploads', express.static('uploads'));
-app.use(requestSizeMiddleware());
 
 // Create uploads directory if it doesn't exist
 if (!fs.existsSync('uploads')) {
@@ -130,11 +113,8 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
-// Apply general rate limiting to all API routes
-app.use('/api', rateLimiters.general);
-
 // Auth Routes
-app.post('/api/auth/register', rateLimiters.register, async (req, res) => {
+app.post('/api/auth/register', async (req, res) => {
   try {
     const { email, password, registrationCode } = req.body;
 
@@ -179,7 +159,7 @@ app.post('/api/auth/register', rateLimiters.register, async (req, res) => {
   }
 });
 
-app.post('/api/auth/login', rateLimiters.auth, async (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -446,7 +426,7 @@ app.delete('/api/reports/:id', authenticateToken, async (req, res) => {
 });
 
 // File Upload Route
-app.post('/api/upload/spray-chart/:reportId', rateLimiters.upload, authenticateToken, upload.single('sprayChart'), async (req, res) => {
+app.post('/api/upload/spray-chart/:reportId', authenticateToken, upload.single('sprayChart'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: 'No file uploaded' });
@@ -485,10 +465,26 @@ app.post('/api/upload/spray-chart/:reportId', rateLimiters.upload, authenticateT
 });
 
 // Health check route
-app.get('/api/health', healthCheckMiddleware());
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
 
 // Error handling middleware (must be last)
-app.use(errorHandlingMiddleware());
+app.use((error, req, res, next) => {
+  console.error('Error:', error);
+  
+  if (error instanceof multer.MulterError) {
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ message: 'File too large' });
+    }
+  }
+  
+  res.status(500).json({ message: 'Something went wrong!' });
+});
 
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
