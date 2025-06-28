@@ -129,7 +129,7 @@ echo "🚀 Building and starting services..."
 echo "   This may take several minutes on first run..."
 
 # Pull base images first to show progress
-docker compose pull
+# docker compose pull mongo 
 
 # Build and start services
 docker compose up -d --build
